@@ -1,0 +1,4 @@
+<!--index.wxml-->
+<view class="container">
+  <vant-button type="default">button</vant-button>
+</view>
