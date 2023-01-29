@@ -1,4 +1,5 @@
 <!--index.wxml-->
 <view class="container">
-  <vant-button type="default">button</vant-button>
+  <navBar style="width: 100%;" title="首页" control="{{false}}"></navBar>
+  <van-button type="primary">primary</van-button>
 </view>

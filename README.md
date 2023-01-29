@@ -4,6 +4,8 @@
 
 ## 核心逻辑构建
 
+-[x] vant-weapp集成
+-[x] color-ui集成 
 
 ## 开发经验总结（坑）
 
@@ -17,4 +19,6 @@
 - https://juejin.cn/post/6961317489225498631
 - https://juejin.cn/post/6844903560195342343
 - https://juejin.cn/post/6844903812851843085
+- https://juejin.cn/post/6844903916963004423 导航栏
+### color-ui demo
 

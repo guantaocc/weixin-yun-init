@@ -14,7 +14,10 @@ App({
       })
     }
 
-    this.globalData = {}
+    this.globalData = {
+      // 常规入口页面的路径
+      NORMAL_ENTRY: "pages/index/index"
+    }
   },
   // 根目录获取
   require(path){
