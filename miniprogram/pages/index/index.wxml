@@ -1,5 +1,39 @@
 <!--index.wxml-->
-<view class="container">
-  <navBar style="width: 100%;" title="首页" control="{{false}}"></navBar>
-  <van-button type="primary">primary</van-button>
+<navBar style="width: 100%;" title="首页" control="{{false}}"></navBar>
+<view class="text-wrap"><text class="text">历史小册</text> </view>
+<!-- 轮播 -->
+<swiper class="card-swiper square-dot" bindchange="cardSwiper" indicator-dots="true" circular="true" autoplay="{{false}}" interval="5000" duration="500" indicator-color="#8799a3" indicator-active-color="#0081ff">
+  <swiper-item class="{{ cardCur===index? 'cur': ''}}" wx:for="{{rumors}}" wx:key="index">
+    <view class="swiper-item">
+      <view class="background-img">
+        <text class="rumors-text">谣言</text>
+        <text class="rumors-title">{{item.title}}</text>
+        <image class="rumors-img" src="../../images/badge-big@2x.5395c013.png" aspectFit></image>
+      </view>
+    </view>
+  </swiper-item>
+</swiper>
+
+<!-- 地图区域 -->
+<view class="text-wrap"><text class="text">疫情分布</text> </view>
+<view class="map">
+  <view wx:if="{{ecLoading}}"  class="ec-loading bg-white">
+   <van-loading  type="spinner" color="#1989fa" />
+  </view>
+  <ec-canvas wx:if="{{!showEchartsImg}}" id="mychart-dom-bar" canvas-id="mychart-bar" ec="{{ ec }}"></ec-canvas>
+  <image wx:else src="{{echartsImg}}" style="width: 100%;height: 100%;"/>
 </view>
+
+<!-- 列表分布 -->
+<view class="list">
+  
+</view>
+
+<!-- 个人信息 -->
+<view class="footer">
+  <van-button round color="rgb(65,105,227)" size="large" class="button-right" open-type="getUserInfo" bind:getuserinfo="skipForm">
+    提交个人信息
+  </van-button>
+</view>
+
+<van-dialog id="van-dialog"  />

@@ -1,124 +1,206 @@
-//index.js
-const app = getApp()
+// echarts
+import * as echarts from '../../components/ec-canvas/echarts'
+import Dialog from '@vant/weapp/dialog/dialog';
+
+import geoJson from '../../constants/china';
+echarts.registerMap('china', geoJson);
+
+
+function initOption(data) {
+  return {
+    tooltip: {
+      trigger: 'item',
+      formatter: '本校学生:{c0}'
+    },
+    position: 'bottom',
+    visualMap: {
+      show: true,
+      type: 'piecewise',
+      min: 0,
+      max: 2000,
+      align: 'left',
+      top: '66%',
+      left: 0,
+      left: 'auto',
+      inRange: {
+        color: [
+          '#ffc0b1',
+          '#ff8c71',
+          '#ef1717',
+          '#9c0505'
+        ]
+      },
+      pieces: [{
+          min: 1000
+        },
+        {
+          min: 500,
+          max: 999
+        },
+        {
+          min: 100,
+          max: 499
+        },
+        {
+          min: 10,
+          max: 99
+        },
+        {
+          min: 1,
+          max: 9
+        }
+      ],
+      orient: 'vertical',
+      showLabel: true,
+      itemWidth: 10,
+      itemHeight: 10,
+      textStyle: {
+        fontSize: 10
+      }
+    },
+    series: [{
+      left: 'center',
+      type: 'map',
+      name: '人数',
+      label: {
+        show: true,
+        position: 'inside',
+        fontSize: 6
+      },
+      mapType: 'china',
+      data: data.data,
+      zoom: 1.2,
+      roam: false,
+      showLegendSymbol: false,
+      emphasis: {},
+      rippleEffect: {
+        show: true,
+        brushType: 'stroke',
+        scale: 2.5,
+        period: 4
+      }
+    }]
+  }
+}
 
 Page({
   data: {
-    avatarUrl: './user-unlogin.png',
-    userInfo: {},
-    hasUserInfo: false,
-    logged: false,
-    takeSession: false,
-    requestResult: '',
-    canIUseGetUserProfile: false,
-    canIUseOpenData: wx.canIUse('open-data.type.userAvatarUrl') // 如需尝试获取用户信息可改为false
+    active: 0,
+    current: 0,
+    cardCur: 0,
+    rumors: ['../../images/1.jpg', '../../images/2.jpg', '../../images/3.jpg'],
+    ec: {
+      // 懒加载
+      lazyload: true,
+      // 页面滚动
+      // disableTouch: true
+    },
+    ecLoading: true,
+    // 弹窗切换 canvas层级
+    echartsImg: '',
+    showEchartsImg: false,
+    mapData: []
   },
-
-  onLoad: function() {
-    if (!wx.cloud) {
-      wx.redirectTo({
-        url: '../chooseLib/chooseLib',
-      })
-      return
-    }
-    if (wx.getUserProfile) {
-      this.setData({
-        canIUseGetUserProfile: true,
-      })
-    }
-  },
-
-  getUserProfile() {
-    // 推荐使用wx.getUserProfile获取用户信息，开发者每次通过该接口获取用户个人信息均需用户确认，开发者妥善保管用户快速填写的头像昵称，避免重复弹窗
-    wx.getUserProfile({
-      desc: '展示用户信息', // 声明获取用户个人信息后的用途，后续会展示在弹窗中，请谨慎填写
-      success: (res) => {
-        this.setData({
-          avatarUrl: res.userInfo.avatarUrl,
-          userInfo: res.userInfo,
-          hasUserInfo: true,
+  onLoad() {
+    const self = this
+    wx.request({
+      url: 'https://lab.isaaclin.cn/nCoV/api/rumors',
+      success(res) {
+        self.setData({
+          rumors: res.data.results
         })
       }
     })
   },
-
-  onGetUserInfo: function(e) {
-    if (!this.data.logged && e.detail.userInfo) {
+  onReady() {
+    wx.cloud.callFunction({
+      name: 'getArea'
+    }).then(res => {
+      let result = res.result
       this.setData({
-        logged: true,
-        avatarUrl: e.detail.userInfo.avatarUrl,
-        userInfo: e.detail.userInfo,
-        hasUserInfo: true,
+        mapData: result
       })
-    }
+      this.initMap()
+    })
   },
-
-  onGetOpenid: function() {
-    // 调用云函数
+  initMap() {
+    // 加载地图数据
+    this.ecComponent = this.selectComponent('#mychart-dom-bar');
+    let option = initOption(this.data.mapData)
+    this.ecComponent.init((canvas, width, height) => {
+      // 获取组件的 canvas、width、height 后的回调函数
+      // 在这里初始化图表
+      const chart = echarts.init(canvas, null, {
+        width: width,
+        height: height
+      });
+      chart.setOption(option)
+      canvas.setChart(chart);
+      // 将图表实例绑定到 this 上，可以在其他成员函数（如 dispose）中访问
+      this.chart = chart;
+      if (!this.echartsImg) {
+        this.save()
+      }
+      this.setData({
+        ecLoading: false
+      })
+      return chart;
+    });
+  },
+  save() {
+    return new Promise((resolve) => {
+      const ecComponent = this.selectComponent('#mychart-dom-bar');
+      ecComponent.canvasToTempFilePath({
+        success: res => {
+          console.log(res)
+          this.setData({
+            echartsImg: res.tempFilePath
+          })
+          resolve()
+        }
+      })
+    })
+  },
+  changeIndex(e) {
+    this.setData({
+      active: e.detail.current
+    })
+  },
+  cardSwiper(e) {
+    this.setData({
+      cardCur: e.detail.current
+    })
+  },
+  // 登录
+  skipForm(e) {
+    console.log('res', e)
+    let userInfo = e.detail.userInfo || {}
     wx.cloud.callFunction({
       name: 'login',
-      data: {},
-      success: res => {
-        console.log('[云函数] [login] user openid: ', res.result.openid)
-        app.globalData.openid = res.result.openid
-        wx.navigateTo({
-          url: '../userConsole/userConsole',
-        })
-      },
-      fail: err => {
-        console.error('[云函数] [login] 调用失败', err)
-        wx.navigateTo({
-          url: '../deployFunctions/deployFunctions',
-        })
+      data: {
+        user: {},
+        userInfo: userInfo
       }
+    }).then(res => {
+      this.switchCanvasImage(true)
+      Dialog.alert({
+        title: '标题',
+        message: JSON.stringify(res.result),
+      }).then(() => {
+        // on close
+        this.switchCanvasImage(false)
+      });
     })
   },
-
-  // 上传图片
-  doUpload: function () {
-    // 选择图片
-    wx.chooseImage({
-      count: 1,
-      sizeType: ['compressed'],
-      sourceType: ['album', 'camera'],
-      success: function (res) {
-        wx.showLoading({
-          title: '上传中',
-        })
-
-        const filePath = res.tempFilePaths[0]
-        
-        // 上传图片
-        const cloudPath = `my-image${filePath.match(/\.[^.]+?$/)[0]}`
-        wx.cloud.uploadFile({
-          cloudPath,
-          filePath,
-          success: res => {
-            console.log('[上传文件] 成功：', res)
-
-            app.globalData.fileID = res.fileID
-            app.globalData.cloudPath = cloudPath
-            app.globalData.imagePath = filePath
-            
-            wx.navigateTo({
-              url: '../storageConsole/storageConsole'
-            })
-          },
-          fail: e => {
-            console.error('[上传文件] 失败：', e)
-            wx.showToast({
-              icon: 'none',
-              title: '上传失败',
-            })
-          },
-          complete: () => {
-            wx.hideLoading()
-          }
-        })
-      },
-      fail: e => {
-        console.error(e)
-      }
+  // 切换canvas显示问题
+  switchCanvasImage(bool) {
+    this.setData({
+      showEchartsImg: bool
     })
-  },
-
+    if (!bool) {
+      setTimeout(() => {
+        this.initMap()
+      }, 200);
+    }
+  }
 })
